@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>天氣查詢</title>
+</head>
+<body>
+  <h1>台灣各縣市天氣查詢</h1>
+
+  <label for="city">請選擇城市：</label>
+<select id="city">
+  <option value="連江縣">連江縣</option>
+  <option value="金門縣">金門縣</option>
+  <option value="宜蘭縣">宜蘭縣</option>
+  <option value="新竹縣">新竹縣</option>
+  <option value="苗栗縣" selected>苗栗縣</option>
+  <option value="彰化縣">彰化縣</option>
+  <option value="南投縣">南投縣</option>
+  <option value="雲林縣">雲林縣</option>
+  <option value="嘉義縣">嘉義縣</option>
+  <option value="屏東縣">屏東縣</option>
+  <option value="臺東縣">臺東縣</option>
+  <option value="花蓮縣">花蓮縣</option>
+  <option value="澎湖縣">澎湖縣</option>
+  <option value="基隆市">基隆市</option>
+  <option value="新竹市">新竹市</option>
+  <option value="嘉義市">嘉義市</option>
+  <option value="臺北市">臺北市</option>
+  <option value="高雄市">高雄市</option>
+  <option value="新北市">新北市</option>
+  <option value="臺中市">臺中市</option>
+  <option value="臺南市">臺南市</option>
+  <option value="桃園市">桃園市</option>
+</select>
+
+
+  <div id="weather" style="margin-top: 1em;">載入中...</div>
+
+  <script>
+    const clientId = "B11023039-f4f6e326-1e83-4290";
+    const clientSecret = "66fff3c0-c85d-49b0-ab53-df5fa3d40ee8";
+
+    async function getToken() {
+      const res = await fetch("https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+          grant_type: "client_credentials",
+          client_id: clientId,
+          client_secret: clientSecret
+        })
+      });
+
+      const data = await res.json();
+      return data.access_token;
+    }
+
+    async function fetchWeather(city) {
+      document.getElementById("weather").innerText = "載入中...";
+
+      const token = await getToken();
+      const graphqlEndpoint = "https://tdx.transportdata.tw/api/cwa/graphql?Authorization=TDX-2A1E325A-C117-4EDB-B4B6-822AACF5088E";
+
+      const query = `
+        query forecast {
+          forecast(LocationName: "${city}") {
+            Locations {
+              LocationName
+              Temperature {
+                Time {
+                  StartTime
+                  Temperature
+                }
+              }
+              Weather {
+                Time {
+                  StartTime
+                  Weather
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const response = await fetch(graphqlEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ query })
+      });
+
+      const result = await response.json();
+      const location = result?.data?.forecast?.Locations?.[0];
+      if (!location) {
+        document.getElementById("weather").innerText = "找不到天氣資料。";
+        return;
+      }
+
+      const tempData = location?.Temperature?.Time ?? [];
+      const weatherData = location?.Weather?.Time ?? [];
+
+      // 用 Map 儲存每天的資料
+      const forecastMap = new Map();
+
+      for (let i = 0; i < tempData.length; i++) {
+        const date = tempData[i].StartTime.split("T")[0];
+        const temp = parseFloat(tempData[i].Temperature);
+        const weather = weatherData[i]?.Weather ?? "無資料";
+
+        if (!forecastMap.has(date)) {
+          forecastMap.set(date, { temps: [], weather });
+        }
+        forecastMap.get(date).temps.push(temp);
+      }
+
+      // 顯示未來 7 天
+      const output = Array.from(forecastMap.entries())
+        .slice(0, 7)
+        .map(([date, { temps, weather }]) => {
+          const avgTemp = Math.round(temps.reduce((a, b) => a + b, 0) / temps.length);
+          return `📅 ${date}：${weather}，${avgTemp}°C`;
+        })
+        .join("<br>");
+
+      document.getElementById("weather").innerHTML = output;
+    }
+
+    // 初始化
+    fetchWeather(document.getElementById("city").value);
+
+    // 切換城市
+    document.getElementById("city").addEventListener("change", (e) => {
+      fetchWeather(e.target.value);
+    });
+  </script>
+</body>
+</html>
