@@ -605,7 +605,7 @@ function App() {
                 }}>7日預報</h3>
               </div>
               
-              {/* 預報清單 - 修正對齊問題 */}
+              {/* 預報清單 - 修正溫度對齊問題，讓溫度偏右一點 */}
               <div style={{ padding: '20px' }}>
                 {weatherData.map((day, index) => (
                   <div 
@@ -667,17 +667,17 @@ function App() {
                       </div>
                     </div>
                     
-                    {/* 溫度 - 右側對齊 */}
+                    {/* 溫度 - 右側對齊，稍微偏右補償°符號 */}
                     <div style={{
                       fontSize: '22px',
                       fontWeight: '600',
                       color: textColor,
                       transition: 'color 0.3s ease',
                       width: '60px',                     // 固定寬度
-                      textAlign: 'center',               // 文字置中
                       display: 'flex',                   // 使用flex確保垂直置中
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'flex-end',        // 改為右對齊，讓溫度偏右一點
+                      paddingRight: '8px'                // 增加右側內距，補償°符號的視覺效果
                     }}>
                       {day.avgTemp}°
                     </div>

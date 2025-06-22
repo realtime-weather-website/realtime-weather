@@ -10,9 +10,16 @@ const PORT = process.env.PORT || 5000
 app.use(cors())
 app.use(express.json())
 
-// Weather API credentials
+// Weather API credentials from environment variables
 const CLIENT_ID = process.env.CLIENT_ID
 const CLIENT_SECRET = process.env.CLIENT_SECRET
+
+// Check if API credentials are provided
+if (!CLIENT_ID || !CLIENT_SECRET) {
+  console.error('❌ 錯誤：請在 .env 檔案中設定 CLIENT_ID 和 CLIENT_SECRET')
+  console.error('請參考 .env.example 檔案並到 https://tdx.transportdata.tw/ 申請API金鑰')
+  process.exit(1)
+}
 
 // Function to get access token
 async function getAccessToken() {
@@ -150,4 +157,5 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`🌤️ Weather API Server is running on port ${PORT}`)
   console.log(`Health check: http://localhost:${PORT}/api/health`)
+  console.log(`✅ API credentials loaded successfully`)
 })
